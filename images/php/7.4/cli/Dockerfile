@@ -1,7 +1,7 @@
 FROM diivanov/php:7.4-base
 
 # Add utilities
-RUN apk add --no-cache gzip git mysql-client procps bash-completion openssh coreutils findutils
+RUN apk add --no-cache zip gzip git mysql-client procps bash-completion openssh coreutils findutils
 
 # Install mhsendmail
 ENV GOPATH "/opt/go"
