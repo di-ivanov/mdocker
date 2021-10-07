@@ -43,6 +43,7 @@ RUN docker-php-ext-configure intl && \
         gd \
         intl \
         mysqli \
+        pcntl \
         pdo \
         pdo_mysql \
         soap \
