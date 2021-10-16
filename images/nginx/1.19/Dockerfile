@@ -1,6 +1,11 @@
-FROM nginx:1.15-alpine
+FROM nginx:1.19-alpine
 
-COPY ./default.conf /etc/nginx/conf.d/
+# Set timezone variable, you can control this from docker-compose
+# env DEFAULT_TZ
+ARG DOMAIN='magento2.docker'
+ENV DEFAULT_DOMAIN ${DOMAIN}
+
+COPY ./default.conf.template /etc/nginx/templates/
 
 RUN apk add openssl && \
     mkdir /etc/nginx/ssl && \
