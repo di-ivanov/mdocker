@@ -1,0 +1,40 @@
+FROM golang:1.15 AS builder
+
+RUN if [ $(uname -m) = "x86_64" ]; then mailhog_arch="amd64"; else mailhog_arch="arm64"; fi \
+    && wget -O mhsendmail.tar.gz https://github.com/mailhog/mhsendmail/archive/refs/tags/v0.2.0.tar.gz \
+    && tar -xf mhsendmail.tar.gz \
+    && mkdir -p ./src/github.com/mailhog/ \
+    && mv ./mhsendmail-0.2.0 ./src/github.com/mailhog/mhsendmail \
+    && cd ./src/github.com/mailhog/mhsendmail/ \
+    && go get . \
+    && GOOS=linux GOARCH=${mailhog_arch} go build -o mhsendmail .
+
+FROM diivanov/php:8.3-base
+
+RUN pecl install xdebug && \
+    docker-php-ext-install \
+        opcache \
+        pcntl && \
+    docker-php-ext-enable xdebug
+
+COPY www.conf /usr/local/etc/php-fpm.d/www.conf
+COPY php.ini /usr/local/etc/php/php.ini
+COPY start.sh /start.sh
+COPY --from=builder /go/src/github.com/mailhog/mhsendmail/mhsendmail /usr/local/bin/
+RUN chmod +x /usr/local/bin/mhsendmail && \
+    usermod -u 1000 www-data &&\
+    groupmod -g 1000 www-data && \
+    chgrp -R www-data /usr/local/etc/php-fpm.d/www.conf && \
+    chown -R www-data /usr/local/etc/php/conf.d/ && \
+    chown www-data /start.sh && \
+    echo -e "\nsendmail_path = \"/usr/local/bin/mhsendmail --smtp-addr='mailhog:1025'\"" >> /usr/local/etc/php/php.ini
+
+RUN chmod +x /start.sh
+
+WORKDIR /var/www/html
+
+EXPOSE 9000
+
+USER www-data
+
+CMD ["/start.sh"]
